@@ -1,0 +1,59 @@
+#include <stdio.h>
+#include "thread.h"
+
+#include <sys/types.h>
+#include <unistd.h>
+#include <time.h>
+#include <math.h>
+
+#define NTHREADS 1000
+
+#define NO_ITERATIONS 1000000
+#define NANOSECONDS_PER_SECOND 1000000000
+
+static void myfunc( int n );
+
+static thread_t threads[NTHREADS];
+typedef struct timespec timespec;
+
+unsigned int diff(timespec start, timespec end)
+{
+  timespec temp;
+  if ((end.tv_nsec-start.tv_nsec)<0) {
+    temp.tv_sec = end.tv_sec-start.tv_sec-1;
+    temp.tv_nsec = NANOSECONDS_PER_SECOND+end.tv_nsec-start.tv_nsec;
+  } else {
+    temp.tv_sec = end.tv_sec-start.tv_sec;
+    temp.tv_nsec = end.tv_nsec-start.tv_nsec;
+  }
+
+  return (temp.tv_sec * NANOSECONDS_PER_SECOND + temp.tv_nsec);
+}
+
+
+int main(){
+
+  timespec time1, time2;
+  unsigned int threadTime;
+
+  clock_gettime(CLOCK_MONOTONIC, &time1);
+
+  for(int i = 0; i < NTHREADS; i++){
+    thread_create(&(threads[i]), &myfunc, i);
+  }
+  for (int i = 0; i < NTHREADS; i++){
+    thread_join(threads[i]);
+    //printf("Thread %d returned with %ld\n", i, exitValue);
+  }
+
+  clock_gettime(CLOCK_MONOTONIC, &time2);
+  threadTime = diff(time1,time2);
+  printf("\n\nIt took %lf nanoseconds to make and exit %d threads!\n", ((double)threadTime/100000000.0) , (int)NTHREADS);
+
+}
+
+void myfunc(int n) {
+
+    thread_exit(0);
+    // Not reached
+}
